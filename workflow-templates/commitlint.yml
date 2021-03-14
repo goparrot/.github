@@ -1,0 +1,22 @@
+name: commitlint
+
+on:
+  push:
+    branches:
+      - $default-branch
+  pull_request:
+    branches:
+      - $default-branch
+
+jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Lints Pull Request commits
+        uses: wagoid/commitlint-github-action@v2

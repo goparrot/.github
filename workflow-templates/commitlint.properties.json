@@ -1,0 +1,11 @@
+{
+    "name": "Commitlint Workflow",
+    "description": "GoParrot Organization commitlint workflow template.",
+    "iconName": "commitlint-icon",
+    "categories": [
+        "TypeScript", "JavaScript"
+    ],
+    "filePatterns": [
+        "package.json$"
+    ]
+}
