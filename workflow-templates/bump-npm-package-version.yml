@@ -1,0 +1,61 @@
+name: bump-version
+
+on:
+  pull_request:
+    branches:
+      - $default-branch
+    types:
+      - labeled
+
+jobs:
+  bump-version:
+    if: ${{ github.event.label.name == 'bump-version' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v2
+        with:
+          # Pulls all commits (needed for semantic release to correctly version)
+          # See https://github.com/semantic-release/semantic-release/issues/1526
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GH_RELEASE_TOKEN }}
+
+      - name: Read node version from `.nvmrc` file
+        id: nvmrc
+        uses: browniebroke/read-nvmrc-action@v1
+
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ steps.nvmrc.outputs.node_version }}
+
+      # Skip post-install scripts here, as a malicious
+      # script could steal NODE_AUTH_TOKEN.
+      - name: Install npm dependencies
+        run: npm install --progress=false --loglevel=warn --ignore-scripts
+
+      - name: Github Identity
+        run: |
+          git config --global user.name "GoParrot Bot"
+          git config --global user.email "bot@goparrot.ai"
+
+      - name: Bump package version
+        run: |
+          npx standard-version --no-verify --skip.tag
+          git push origin ${{ github.head_ref }}
+
+      - name: Remove "${{ github.event.label.name }}" label
+        uses: buildsville/add-remove-label@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          label: ${{ github.event.label.name }}
+          type: remove
+
+      - name: Add "version-bumped" label
+        uses: buildsville/add-remove-label@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          label: version-bumped
+          type: add
