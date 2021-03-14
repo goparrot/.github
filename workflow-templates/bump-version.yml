@@ -6,10 +6,13 @@ on:
       - $default-branch
     types:
       - labeled
+  issue_comment:
+    types:
+      - created
 
 jobs:
   bump-version:
-    if: ${{ github.event.label.name == 'bump-version' }}
+    if: ${{ github.event.label.name == 'bump-version' || (github.event.issue.pull_request && github.event.comment.author_association == 'MEMBER' && contains(github.event.comment.body, '/bump')) }}
     runs-on: ubuntu-latest
 
     steps:

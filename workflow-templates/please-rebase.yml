@@ -1,0 +1,23 @@
+name: please-rebase
+
+on:
+  # https://docs.github.com/en/actions/reference/events-that-trigger-workflows#issue_comment
+  issue_comment:
+    types:
+      - created
+
+jobs:
+  rebase:
+    if: ${{ github.event.issue.pull_request && github.event.comment.author_association == 'MEMBER' && contains(github.event.comment.body, '/rebase') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the latest code
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GITHUB_RELEASE_TOKEN }}
+          fetch-depth: 0 # otherwise, you will fail to push refs to dest repo
+
+      - name: Automatic Rebase
+        uses: cirrus-actions/rebase@1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_RELEASE_TOKEN }}

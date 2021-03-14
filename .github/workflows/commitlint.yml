@@ -1,0 +1,22 @@
+name: commitlint
+
+on:
+  repository_dispatch:
+    types: [org-workflow-bot]
+#  push:
+#    branches: [master, main]
+#  pull_request:
+#    branches: [master, main]
+
+jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Lints Pull Request commits
+        uses: wagoid/commitlint-github-action@v2

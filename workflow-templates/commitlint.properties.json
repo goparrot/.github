@@ -1,9 +1,9 @@
 {
-    "name": "Commitlint Workflow",
-    "description": "GoParrot Organization commitlint workflow template.",
+    "name": "Commitlint workflow",
+    "description": "Check if your commit messages meet the conventional commit format",
     "iconName": "commitlint-icon",
     "categories": [
-        "TypeScript", "JavaScript"
+        "TypeScript", "JavaScript", "Python", "Go", "Rust", "Java", "PHP"
     ],
     "filePatterns": [
         "package.json$"

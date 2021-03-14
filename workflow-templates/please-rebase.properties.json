@@ -1,0 +1,8 @@
+{
+    "name": "/rebase workflow",
+    "description": "Simply comment `/rebase` to trigger the action",
+    "iconName": "rebase.svg",
+    "categories": [
+        "TypeScript", "JavaScript", "Python", "Go", "Rust", "Java", "PHP"
+    ]
+}
