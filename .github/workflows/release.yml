@@ -12,14 +12,36 @@ on:
 #      - completed
 
 jobs:
-  release:
+  register:
     # double check :)
     if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
 
     steps:
-      - name: Git checkout
+      - uses: SvanBoxel/organization-workflow@main
+        with:
+          id: ${{ github.event.client_payload.id }}
+          callback_url: ${{ github.event.client_payload.callback_url }}
+          sha: ${{ github.event.client_payload.sha }}
+          run_id: ${{ github.run_id }}
+          name: ${{ github.workflow }}
+
+  release:
+    needs: [register]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone repository
         uses: actions/checkout@v2
+        with:
+          # Pulls all commits (needed for semantic release to correctly version)
+          # See https://github.com/semantic-release/semantic-release/issues/1526
+          fetch-depth: 0
+          repository: ${{ github.event.client_payload.repository.full_name }}
+          ref: ${{ github.event.client_payload.sha }}
+          token: ${{ github.event.client_payload.token }}
+#          ref: ${{ github.head_ref }}
+#          token: ${{ secrets.GH_RELEASE_TOKEN }}
 
       - name: Read node version from `.nvmrc` file
         id: nvmrc
@@ -34,7 +56,7 @@ jobs:
         id: package-version
         uses: EndBug/version-check@v1
         with:
-          file-url: https://unpkg.com/@goparrot/geocoder@latest/package.json
+          file-url: https://unpkg.com/@${{ github.event.client_payload.repository.full_name }}@latest/package.json
           static-checking: localIsNew
 
       - name: Publish to NPM and create github release

@@ -8,8 +8,22 @@ on:
 #    types: [labeled]
 
 jobs:
-  bump-version:
+  register:
+    # double check :)
     if: ${{ github.event.label.name == 'bump-version' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: SvanBoxel/organization-workflow@main
+        with:
+          id: ${{ github.event.client_payload.id }}
+          callback_url: ${{ github.event.client_payload.callback_url }}
+          sha: ${{ github.event.client_payload.sha }}
+          run_id: ${{ github.run_id }}
+          name: ${{ github.workflow }}
+
+  bump-version:
+    needs: [register]
     runs-on: ubuntu-latest
 
     steps:
@@ -19,8 +33,11 @@ jobs:
           # Pulls all commits (needed for semantic release to correctly version)
           # See https://github.com/semantic-release/semantic-release/issues/1526
           fetch-depth: 0
-          ref: ${{ github.head_ref }}
-          token: ${{ secrets.GH_RELEASE_TOKEN }}
+          repository: ${{ github.event.client_payload.repository.full_name }}
+          ref: ${{ github.event.client_payload.sha }}
+          token: ${{ github.event.client_payload.token }}
+#          ref: ${{ github.head_ref }}
+#          token: ${{ secrets.GH_RELEASE_TOKEN }}
 
       - name: Read node version from `.nvmrc` file
         id: nvmrc

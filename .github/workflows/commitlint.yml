@@ -9,14 +9,37 @@ on:
 #    branches: [master, main]
 
 jobs:
+  register:
+    if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: SvanBoxel/organization-workflow@main
+        with:
+          id: ${{ github.event.client_payload.id }}
+          callback_url: ${{ github.event.client_payload.callback_url }}
+          sha: ${{ github.event.client_payload.sha }}
+          run_id: ${{ github.run_id }}
+          name: ${{ github.workflow }}
+          enforce: true
+          documentation: ".github/workflows/commitlint.md"
+
   commitlint:
+    needs: [register]
     runs-on: ubuntu-latest
 
     steps:
       - name: Clone repository
         uses: actions/checkout@v2
         with:
+          # Pulls all commits (needed for semantic release to correctly version)
+          # See https://github.com/semantic-release/semantic-release/issues/1526
           fetch-depth: 0
+          repository: ${{ github.event.client_payload.repository.full_name }}
+          ref: ${{ github.event.client_payload.sha }}
+          token: ${{ github.event.client_payload.token }}
+#          ref: ${{ github.head_ref }}
+#          token: ${{ secrets.GH_RELEASE_TOKEN }}
 
       - name: Lints Pull Request commits
-        uses: wagoid/commitlint-github-action@v2
+        uses: ruscon/commitlint-github-action@hotfix/fatal-bad-error
