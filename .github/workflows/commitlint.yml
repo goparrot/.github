@@ -44,13 +44,19 @@ jobs:
 #          ref: ${{ github.head_ref }}
 #          token: ${{ secrets.GH_RELEASE_TOKEN }}
 
-      - name: Lints Pull Request commits
-        uses: wagoid/commitlint-github-action@v2
-        env:
-          GITHUB_SHA: ${{ github.event.client_payload.sha }}
-          GITHUB_REF: ${{ github.event.client_payload.event.ref }}
-          GITHUB_HEAD_REF: ${{ github.event.client_payload.sha }}
-          GITHUB_BASE_REF: ${{ github.event.client_payload.event.base_ref }}
+      - name: Run linters
+        uses: wearerequired/lint-action@v1
+        with:
+          eslint: true
+          prettier: true
+
+#      - name: Lints Pull Request commits
+#        uses: wagoid/commitlint-github-action@v2
+#        env:
+#          GITHUB_SHA: ${{ github.event.client_payload.sha }}
+#          GITHUB_REF: ${{ github.event.client_payload.event.ref }}
+#          GITHUB_HEAD_REF: ${{ github.event.client_payload.sha }}
+#          GITHUB_BASE_REF: ${{ github.event.client_payload.event.base_ref }}
 
         # ruscon/commitlint-github-action@hotfix/fatal-bad-error
 
