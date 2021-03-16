@@ -9,8 +9,7 @@ on:
 #    branches: [master, main]
 
 jobs:
-  register:
-    if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
+  commitlint:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,12 +23,8 @@ jobs:
           enforce: true
           documentation: ".github/workflows/commitlint.md"
 
-  commitlint:
-    needs: [register]
-    runs-on: ubuntu-latest
-
-    steps:
       - name: Clone repository
+        if: ${{ github.event.client_payload.ref == 'refs/heads/master' || github.event.client_payload.ref == 'refs/heads/main' }}
         uses: actions/checkout@v2
         with:
           # Pulls all commits (needed for semantic release to correctly version)
