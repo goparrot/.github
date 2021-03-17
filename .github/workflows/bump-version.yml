@@ -6,38 +6,11 @@ on:
 
 jobs:
   bump-version:
-#    if: ${{ github.event.client_payload.github.payload.event.pull_request && (github.event.client_payload.github.payload.event.action == 'labeled' && github.event.client_payload.github.payload.event.label.name == 'bump-version') || (github.event.client_payload.github.payload.event.event_name == 'issue_comment' && github.event.client_payload.github.payload.event.comment.author_association == 'MEMBER' && contains(github.event.client_payload.github.payload.event.comment.body, '/bump')) }}
+    if: ${{ github.event.client_payload.pull_request && github.event.client_payload.pull_request.base.ref == github.event.client_payload.pull_request.base.repo.default_branch }}
     runs-on: ubuntu-latest
 
     steps:
-#      - run: |
-#          echo "${{ toJson(github) }}"
-
-#      - name: Delete the comment if it was created.
-#        if: ${{ github.event.client_payload.github.payload.comment.id }}
-#        uses: peter-evans/create-or-update-comment@v1
-#        with:
-#          type: delete
-#          token: ${{ secrets.GH_RELEASE_TOKEN }}
-#          comment_id: ${{ github.event.client_payload.github.payload.comment.id }}
-
-#      - name: Delete the "bump-version" label if it was created.
-#        if: ${{ github.event.client_payload.github.payload.event.label.name }}
-#        uses: buildsville/add-remove-label@v1
-#        with:
-#          type: remove
-#          token: ${{ github.event.client_payload.github.payload.token }}
-#          label: ${{ github.event.client_payload.github.payload.event.label.name }}
-
-      - name: Add reaction
-        uses: peter-evans/create-or-update-comment@v1
-        with:
-          token: ${{ secrets.GH_RELEASE_TOKEN }}
-          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
-          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
-          reaction-type: eyes
-
-      - name: Clone repository
+      - name: Checkout
         uses: actions/checkout@v2
         with:
           # Pulls all commits (needed for semantic release to correctly version)
@@ -45,12 +18,31 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GH_RELEASE_TOKEN }}
           repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
-          ref: ${{ github.event.client_payload.pull_request.data.head.ref }}
+          ref: ${{ github.event.client_payload.pull_request.head.ref }}
+
+      - name: Add 👀 reaction
+        uses: actions/github-script@v3.1.0
+        id: reaction
+        with:
+          github-token: ${{ secrets.GH_RELEASE_TOKEN }}
+          result-encoding: string
+          script: |
+            const payload = context.payload.client_payload.github.payload;
+            return (await github.reactions.createForIssueComment({
+                owner: payload.repository.owner.login,
+                repo: payload.repository.name,
+                comment_id: payload.comment.id,
+                content: "eyes",
+            })).data.id;
+
+      - name: Read node version from `.nvmrc` file
+        id: nvmrc
+        uses: browniebroke/read-nvmrc-action@v1
 
       - name: Use Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: 14
+          node-version: ${{ steps.nvmrc.outputs.node_version }}
 
       # Skip post-install scripts here, as a malicious
       # script could steal NODE_AUTH_TOKEN.
@@ -65,24 +57,25 @@ jobs:
 
       - name: Bump package version
         run: |
-          npm i -g standard-version
-          npx standard-version --no-verify --skip.tag
-          git push origin ${{ github.event.client_payload.pull_request.data.head.ref }}
+          npm run version
 
-      - name: Add reaction
-        uses: peter-evans/create-or-update-comment@v1
+      - name: Change reaction to 🎉
+        uses: actions/github-script@v3
         with:
-          token: ${{ secrets.GH_RELEASE_TOKEN }}
-          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
-          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
-          body: |
-            Bot: Version bumped successfully
-          reaction-type: hooray
-
-#      - name: Add "version-bumped" label
-#        uses: buildsville/add-remove-label@v1
-#        with:
-#          type: add
-#          label: version-bumped
-#          token: ${{ github.event.client_payload.github.payload.token }}
-
+          github-token: ${{ secrets.GH_RELEASE_TOKEN }}
+          script: |
+            const payload = context.payload.client_payload.github.payload;
+            await Promise.all([
+              github.reactions.deleteForIssueComment({
+                  owner: payload.repository.owner.login,
+                  repo: payload.repository.name,
+                  comment_id: payload.comment.id,
+                  reaction_id: ${{ steps.reaction.outputs.result }},
+              }),
+              github.reactions.createForIssueComment({
+                  owner: payload.repository.owner.login,
+                  repo: payload.repository.name,
+                  comment_id: payload.comment.id,
+                  content: "hooray",
+              })
+            ]);

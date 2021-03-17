@@ -3,36 +3,57 @@ name: commitlint
 on:
   repository_dispatch:
     types: [commitlint]
-#  push:
-#    branches: [master, main]
-#  pull_request:
-#    branches: [master, main]
 
 jobs:
   commitlint:
+#    if: ${{ github.event.client_payload.pull_request && github.event.client_payload.pull_request.base.ref == github.event.client_payload.pull_request.base.repo.default_branch }}
     runs-on: ubuntu-latest
 
     steps:
-      - run: |
-          echo "${{ toJson(github) }}"
-
-      - name: Clone repository
+      - name: Checkout
         uses: actions/checkout@v2
         with:
           # Pulls all commits (needed for semantic release to correctly version)
           # See https://github.com/semantic-release/semantic-release/issues/1526
           fetch-depth: 0
-          repository: ${{ github.event.client_payload.origin_github.repository.full_name }}
-          ref: ${{ github.event.client_payload.origin_github.sha }}
-          token: ${{ github.event.client_payload.origin_github.token }}
-#          ref: ${{ github.head_ref }}
-#          token: ${{ secrets.GH_RELEASE_TOKEN }}
+          token: ${{ secrets.GH_RELEASE_TOKEN }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          ref: ${{ github.event.client_payload.pull_request.head.ref }}
 
-      - name: Run linters
-        uses: wearerequired/lint-action@v1
+      - name: Read node version from `.nvmrc` file
+        id: nvmrc
+        uses: browniebroke/read-nvmrc-action@v1
+
+      - name: Use Node.js
+        uses: actions/setup-node@v2
         with:
-          eslint: true
-          prettier: true
+          node-version: ${{ steps.nvmrc.outputs.node_version }}
+
+      # Skip post-install scripts here, as a malicious
+      # script could steal NODE_AUTH_TOKEN.
+      - name: Install npm dependencies
+        run: npm install --progress=false --loglevel=warn --ignore-scripts
+
+      - name: Github Identity
+        run: |
+          git config --global user.name "goparrot-bot"
+          git config --global user.email "bot@goparrot.ai"
+          git remote set-url origin https://x-access-token:${{ secrets.GH_RELEASE_TOKEN }}@github.com/${{ github.event.client_payload.github.payload.repository.full_name }}
+
+
+      - name: Lints Pull Request commits
+        uses: wagoid/commitlint-github-action@v2
+        env:
+          GITHUB_SHA: ${{ github.event.client_payload.pull_request.head.sha }}
+          GITHUB_REF: ${{ github.event.client_payload.pull_request.base.sha }}
+          GITHUB_HEAD_REF: ${{ github.event.client_payload.pull_request.head.ref }}
+          GITHUB_BASE_REF: ${{ github.event.client_payload.pull_request.base.ref }}
+
+#      - name: Run linters
+#        uses: wearerequired/lint-action@v1
+#        with:
+#          eslint: true
+#          prettier: true
 
 #      - name: Lints Pull Request commits
 #        uses: wagoid/commitlint-github-action@v2
