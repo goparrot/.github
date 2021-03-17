@@ -2,35 +2,19 @@ name: commitlint
 
 on:
   repository_dispatch:
-    types: [org-workflow-bot]
+    types: [commitlint]
 #  push:
 #    branches: [master, main]
 #  pull_request:
 #    branches: [master, main]
 
 jobs:
-  register:
-#    if: ${{ github.event.client_payload.ref == 'refs/heads/master' || github.event.client_payload.ref == 'refs/heads/main' }}
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: SvanBoxel/organization-workflow@main
-        with:
-          id: ${{ github.event.client_payload.id }}
-          callback_url: ${{ github.event.client_payload.callback_url }}
-          sha: ${{ github.event.client_payload.sha }}
-          run_id: ${{ github.run_id }}
-          name: ${{ github.workflow }}
-          enforce: true
-          documentation: ".github/workflows/commitlint.md"
-
   commitlint:
-    needs: [register]
     runs-on: ubuntu-latest
 
     steps:
       - run: |
-          echo "${{ toJson(github.event) }}"
+          echo "${{ toJson(github) }}"
 
       - name: Clone repository
         uses: actions/checkout@v2
@@ -38,9 +22,9 @@ jobs:
           # Pulls all commits (needed for semantic release to correctly version)
           # See https://github.com/semantic-release/semantic-release/issues/1526
           fetch-depth: 0
-          repository: ${{ github.event.client_payload.repository.full_name }}
-          ref: ${{ github.event.client_payload.sha }}
-          token: ${{ github.event.client_payload.token }}
+          repository: ${{ github.event.client_payload.origin_github.repository.full_name }}
+          ref: ${{ github.event.client_payload.origin_github.sha }}
+          token: ${{ github.event.client_payload.origin_github.token }}
 #          ref: ${{ github.head_ref }}
 #          token: ${{ secrets.GH_RELEASE_TOKEN }}
 
@@ -53,10 +37,10 @@ jobs:
 #      - name: Lints Pull Request commits
 #        uses: wagoid/commitlint-github-action@v2
 #        env:
-#          GITHUB_SHA: ${{ github.event.client_payload.sha }}
-#          GITHUB_REF: ${{ github.event.client_payload.event.ref }}
-#          GITHUB_HEAD_REF: ${{ github.event.client_payload.sha }}
-#          GITHUB_BASE_REF: ${{ github.event.client_payload.event.base_ref }}
+#          GITHUB_SHA: ${{ github.event.client_payload.origin_github.sha }}
+#          GITHUB_REF: ${{ github.event.client_payload.origin_github.event.ref }}
+#          GITHUB_HEAD_REF: ${{ github.event.client_payload.origin_github.sha }}
+#          GITHUB_BASE_REF: ${{ github.event.client_payload.origin_github.event.base_ref }}
 
         # ruscon/commitlint-github-action@hotfix/fatal-bad-error
 
