@@ -7,7 +7,7 @@ on:
 jobs:
   commitlint:
 #    if: ${{ github.event.client_payload.pull_request && github.event.client_payload.pull_request.base.ref == github.event.client_payload.pull_request.base.repo.default_branch }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
